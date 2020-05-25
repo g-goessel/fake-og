@@ -17,5 +17,10 @@ RUN cargo build --release
 
 # at the end we build the final image
 FROM ubuntu:18.04
-COPY --from=builder /fake-og/target/release/fake-og /usr/local/bin/fake-og
-CMD ["fake-og"]
+RUN apt-get update && apt-get install -y libpq-dev && rm -rf /var/lib/apt/lists/*
+WORKDIR /fake-og
+COPY --from=builder /fake-og/target/release/fake-og /fake-og/fake-og
+COPY ./migrations /fake-og/migrations
+COPY ./static /fake-og/static
+COPY ./templates /fake-og/templates
+CMD ["./fake-og"]

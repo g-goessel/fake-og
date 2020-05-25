@@ -21,8 +21,8 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  GKE_CLUSTER: my-first-cluster-1
-  GKE_ZONE: europe-west2-a
+  GKE_CLUSTER: cluster-1
+  GKE_ZONE: europe-west2-c
   IMAGE: fake-og
 
 jobs:
@@ -65,15 +65,17 @@ jobs:
         docker push "gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA"
 
     # Set up kustomize
-    - name: Set up Kustomize
-      run: |-
-        curl -sfLo kustomize https://github.com/kubernetes-sigs/kustomize/releases/download/v3.1.0/kustomize_3.1.0_linux_amd64
-        chmod u+x ./kustomize
+    # - name: Set up Kustomize
+    #   run: |-
+    #     curl -sfLo kustomize https://github.com/kubernetes-sigs/kustomize/releases/download/v3.1.0/kustomize_3.1.0_linux_amd64
+    #     chmod u+x ./kustomize
 
     # Deploy the Docker image to the GKE cluster
     - name: Deploy
       run: |-
-        ./kustomize edit set image gcr.io/PROJECT_ID/IMAGE:TAG=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA
-        ./kustomize build . | kubectl apply -f -
+        ls
+        sed -i "s/{{fake-og-image}}/gcr.io\/$PROJECT_ID\/$IMAGE:$GITHUB_SHA/g" deployment.yml
+        sed -i "s/{{CLOUD_SQL_PARAMS}}/${{ secrets.CLOUD_SQL_PARAMS }}/g" deployment.yml
+        kubectl apply -f deployment.yml
         kubectl rollout status deployment/$IMAGE
         kubectl get services -o wide
